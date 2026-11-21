@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .back { fill: #c2410c; }
+    .front { fill: #1d1a16; }
+    .line { stroke: #f8f6f2; }
+    @media (prefers-color-scheme: dark) {
+      .back { fill: #fb8a4c; }
+      .front { fill: #f3efe9; }
+      .line { stroke: #12100e; }
+    }
+  </style>
+  <rect class="back" x="10" y="3.5" width="17" height="22" rx="4.5" transform="rotate(12 18.5 14.5)" />
+  <rect class="front" x="4.5" y="6.5" width="17" height="22" rx="4.5" />
+  <path class="line" d="M9.5 13.5h7M9.5 18.5h4.5" fill="none" stroke-width="2" stroke-linecap="round" />
+</svg>

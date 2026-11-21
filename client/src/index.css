@@ -1,0 +1,320 @@
+@import 'tailwindcss';
+
+/* Motyw ciemny włączany klasą .dark na <html> (ustawia ją theme-init.js oraz przełącznik motywu). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Kroje pisma i animacje ─────────────────────────────────────────────── */
+@theme {
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Fraunces Variable', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --animate-card-next: card-next 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-card-prev: card-prev 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-dialog-in: dialog-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop-in: pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-toast-in: toast-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 240ms ease-out both;
+  --animate-eq: eq 900ms ease-in-out infinite;
+}
+
+/* ── Kolory semantyczne ─────────────────────────────────────────────────────
+   Klasy typu bg-surface / text-muted / border-line wskazują na zmienne CSS,
+   a oba motywy różnią się wyłącznie wartościami tych zmiennych (patrz niżej). */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
+  --color-card-front: var(--card-front);
+  --color-card-back: var(--card-back);
+  --color-card-back-line: var(--card-back-line);
+
+  --shadow-card: var(--shadow-card-value);
+  --shadow-pop: var(--shadow-pop-value);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --canvas: #f8f6f2; /* tło strony — ciepły, „papierowy” odcień */
+    --surface: #ffffff; /* karty, okna dialogowe, pola formularzy */
+    --subtle: #f0ece5; /* delikatne wypełnienia i stan hover */
+    --line: #e5dfd5;
+    --line-strong: #cfc7ba;
+    --ink: #1d1a16; /* tekst podstawowy */
+    --muted: #675f55; /* tekst pomocniczy (kontrast ≥ 4.5:1) */
+    --faint: #a39a8d; /* podpowiedzi w polach, elementy dekoracyjne */
+    --accent: #c2410c;
+    --accent-strong: #9a3412;
+    --accent-soft: #fbe9dd;
+    --on-accent: #ffffff;
+    --danger: #b42318;
+    --danger-soft: #fce9e6;
+    --on-danger: #ffffff;
+    --card-front: #ffffff;
+    --card-back: #fff7f0;
+    --card-back-line: #f1d8c5;
+
+    --shadow-card-value: 0 1px 2px rgb(60 42 20 / 0.05), 0 8px 16px -6px rgb(60 42 20 / 0.08),
+      0 28px 56px -20px rgb(60 42 20 / 0.22);
+    --shadow-pop-value: 0 1px 2px rgb(60 42 20 / 0.06), 0 12px 32px -8px rgb(60 42 20 / 0.22);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --canvas: #12100e;
+    --surface: #1b1815;
+    --subtle: #27221d;
+    --line: #302a24;
+    --line-strong: #4a4239;
+    --ink: #f3efe9;
+    --muted: #a99f93;
+    --faint: #6f675d;
+    --accent: #fb8a4c;
+    --accent-strong: #fda878;
+    --accent-soft: #331d10;
+    --on-accent: #220f04;
+    --danger: #f97066;
+    --danger-soft: #351513;
+    --on-danger: #2a0a07;
+    --card-front: #1e1a17;
+    --card-back: #281c14;
+    --card-back-line: #4a2f1e;
+
+    --shadow-card-value: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 16px -6px rgb(0 0 0 / 0.4),
+      0 28px 56px -20px rgb(0 0 0 / 0.7);
+    --shadow-pop-value: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.7);
+  }
+
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Otwarte okno dialogowe blokuje przewijanie strony pod spodem. Znikający pasek przewijania
+     zastępujemy odstępem o tej samej szerokości (ustawia go Dialog.jsx), żeby treść nie „skakała”. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+    padding-right: var(--scrollbar-width, 0px);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  select:not(:disabled),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--accent) 28%, transparent);
+  }
+
+  dialog::backdrop {
+    background-color: rgb(24 18 12 / 0.5);
+    backdrop-filter: blur(3px);
+    animation: fade-in 200ms ease-out both;
+  }
+}
+
+/* ── Klatki animacji ────────────────────────────────────────────────────── */
+@keyframes card-next {
+  from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.985);
+  }
+}
+@keyframes card-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-32px) scale(0.985);
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ── Obracana fiszka (CSS 3D) ───────────────────────────────────────────────
+   .flip-scene  — nadaje perspektywę,
+   .flip-inner  — obraca się wokół osi Y i przenosi 3D na dzieci (preserve-3d),
+   .flip-face   — awers i rewers leżą w tym samym miejscu; odwrócona strona jest niewidoczna.
+   Uwaga: .flip-inner nie może mieć overflow, opacity ani filter — to „spłaszcza” 3D. */
+.flip-scene {
+  perspective: 1800px;
+}
+
+/* Poziome przesunięcia palcem obsługuje aplikacja (zmiana fiszki); pionowe przewijanie długiego tekstu
+   i powiększanie dwoma palcami zostają przeglądarce. Właściwość nie jest dziedziczona, stąd selektor „*”. */
+.flip-scene,
+.flip-scene * {
+  touch-action: pan-y pinch-zoom;
+}
+
+.flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 620ms cubic-bezier(0.3, 0.75, 0.25, 1);
+}
+
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Każda strona jest kontenerem zapytań: tekst i układ dopasowują się do wymiarów karty, a nie okna. */
+  container-type: size;
+}
+
+.flip-face--back {
+  transform: rotateY(180deg);
+}
+
+/* Treść strony: obrazek (jeśli jest) nad przewijanym tekstem. */
+.flip-body {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.flip-image {
+  flex: 0 0 54%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.flip-text {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Niska, szeroka karta (np. telefon trzymany poziomo): obrazek obok tekstu zamiast nad nim. */
+@container (max-height: 320px) and (min-width: 420px) {
+  .flip-body {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+
+  .flip-image {
+    flex-basis: 40%;
+    padding-bottom: 0.25rem;
+  }
+}
+
+/* Rozmiary tekstu fiszki. Jednostka cqmin to 1% krótszego boku karty, więc tekst skaluje się razem z nią
+   (w granicach wyznaczonych przez clamp) — tak samo na telefonie, tablecie i dużym monitorze. */
+.card-text-xl {
+  font-size: clamp(1.75rem, 11cqmin, 3.75rem);
+  line-height: 1.1;
+}
+
+.card-text-lg {
+  font-size: clamp(1.5rem, 8.8cqmin, 3rem);
+  line-height: 1.15;
+}
+
+.card-text-md {
+  font-size: clamp(1.25rem, 6.8cqmin, 2.25rem);
+  line-height: 1.25;
+}
+
+.card-text-sm {
+  font-size: clamp(1.0625rem, 5.8cqmin, 1.5rem);
+  line-height: 1.4;
+}
+
+.card-text-xs {
+  font-size: clamp(1rem, 5.2cqmin, 1.25rem);
+  line-height: 1.55;
+}
+
+.card-text-2xs {
+  font-size: clamp(0.9375rem, 4.6cqmin, 1.125rem);
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

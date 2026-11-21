@@ -1,0 +1,31 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Aplikacja jednostronicowa: adresy obsługiwane przez React Router dostają index.html.
+# (Reguła "/*" przechwyciłaby też /api/* i zasłoniła serwer API, dlatego trasy są wymienione wprost.)
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/register"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/account"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/decks/*"
+  to = "/index.html"
+  status = 200
+
+# Lokalnie: `netlify dev` uruchamia Vite i serwer API z emulacją bazy danych i Blobs.
+[dev]
+  command = "npx vite"
+  targetPort = 5173
+  framework = "#custom"
