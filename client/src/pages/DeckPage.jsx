@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Pencil, Play, Plus, SearchX, SquareStack, Trash2, Volume2, WifiOff } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Pencil, Play, Plus, SearchX, SquareStack, Trash2, Volume2, WifiOff } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { CardFormDialog } from '../components/CardFormDialog.jsx';
 import { CardImage } from '../components/CardImage.jsx';
@@ -218,6 +218,9 @@ export default function DeckPage() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <ButtonLink to={`/decks/${deck.id}/study`} variant="primary" size="lg" icon={Play}>
               Ucz się
+            </ButtonLink>
+            <ButtonLink to={`/decks/${deck.id}/lesson`} size="lg" icon={GraduationCap}>
+              Lekcja
             </ButtonLink>
             <Button size="lg" icon={Plus} onClick={() => setDialog({ type: 'add-card' })}>
               Dodaj fiszkę

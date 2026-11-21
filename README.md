@@ -6,8 +6,8 @@ Aplikacja internetowa do nauki z fiszek: własne zestawy, fiszki z obrazkami, od
 | --- | --- |
 | Frontend | React 19, React Router, Tailwind CSS 4, Vite |
 | Backend | Node.js, Express 5 (REST API) |
-| Baza danych | SQLite — jeden plik, obsługiwany przez wbudowany moduł `node:sqlite` |
-| Obrazki | pliki na dysku serwera (`data/uploads`) albo zewnętrzny adres URL |
+| Baza danych | Netlify Database (Postgres) |
+| Obrazki | Netlify Blobs albo zewnętrzny adres URL |
 
 ## Co potrafi
 
@@ -15,74 +15,62 @@ Aplikacja internetowa do nauki z fiszek: własne zestawy, fiszki z obrazkami, od
 - **Prywatne dane.** Każdy użytkownik widzi tylko własne zestawy, fiszki i obrazki.
 - **Zestawy i fiszki.** Tworzenie, edycja i usuwanie (zawsze z potwierdzeniem). Fiszka ma awers, rewers i opcjonalny obrazek — wgrany z dysku, przeciągnięty, wklejony ze schowka albo podany jako adres URL.
 - **Odczyt na głos.** Ikona głośnika po obu stronach każdej fiszki (Web Speech API przeglądarki). Język jest rozpoznawany automatycznie albo wybierany ręcznie — osobno dla awersu i rewersu.
-- **Tryb nauki.** Duża karta obracana w 3D kliknięciem lub spacją, przyciski „Poprzednia” / „Następna”, strzałki na klawiaturze, przesunięcia palcem na telefonie, licznik postępu („3 / 15”) i przycisk „Tasuj”.
+- **Tryby nauki.** Klasyczny przegląd fiszek oraz „Lekcja” z partią 5–50 kart, samooceną, czterema ocenami i 5 przegródkami Leitnera. Postęp jest zapisywany osobno dla użytkownika; trudne fiszki można od razu edytować.
 - **Wygląd.** Motyw jasny i ciemny, układ dopasowany do telefonu i komputera.
 
-## Uruchomienie krok po kroku
+## Uruchomienie lokalne
 
 ### 1. Wymagania
 
-**Node.js 22.13 lub nowszy** (najlepiej aktualna wersja LTS z [nodejs.org](https://nodejs.org)). Sprawdzenie wersji:
+**Node.js 22.13 lub nowszy** oraz [Netlify CLI](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/):
 
 ```bash
 node -v
+npm install -g netlify-cli
 ```
-
-Niczego więcej nie trzeba instalować — baza danych to plik tworzony automatycznie przy pierwszym uruchomieniu.
 
 ### 2. Zainstaluj zależności
 
 W katalogu projektu:
 
 ```bash
-npm install
+npm ci
 ```
 
-### 3. Zbuduj frontend
+### 3. Uruchom lokalne środowisko Netlify
 
 ```bash
-npm run build
+netlify link
+npm run dev
 ```
 
-### 4. Uruchom serwer
-
-```bash
-npm start
-```
-
-W konsoli pojawi się:
-
-```
-Fiszki działają:  http://localhost:3000
-Baza danych:      …/data/fiszki.db (node:sqlite)
-Obrazki:          …/data/uploads
-```
-
-### 5. Otwórz aplikację
-
-1. Wejdź na <http://localhost:3000>.
-2. Kliknij **Załóż konto**, podaj nazwę użytkownika i hasło (co najmniej 8 znaków).
-3. Wybierz **Dodaj przykładowy zestaw** albo **Utwórz zestaw** i dodaj własne fiszki.
-4. Kliknij **Ucz się**.
-
-Serwer zatrzymuje `Ctrl + C`. Wszystkie dane (baza, obrazki, sekret JWT) zostają w katalogu `data/`.
+`npm run dev` uruchamia Netlify CLI, które udostępnia Vite i lokalne integracje Netlify Database oraz Blobs.
 
 ## Konfiguracja (opcjonalna)
 
-Aplikacja działa bez żadnej konfiguracji. Aby coś zmienić, skopiuj `.env.example` jako `.env` i ustaw wybrane zmienne:
+W środowisku Netlify `NETLIFY_DB_URL` i konfiguracja Blobs są dostarczane przez platformę. Ustaw `JWT_SECRET` jako poufną zmienną środowiskową witryny (minimum 32 losowe znaki); bez niej aplikacja zapisze wygenerowany sekret w Netlify Blobs.
 
 | Zmienna | Domyślnie | Znaczenie |
 | --- | --- | --- |
 | `PORT` | `3000` | port serwera |
 | `HOST` | `0.0.0.0` | adres, na którym serwer nasłuchuje |
-| `JWT_SECRET` | losowy, zapisany w `data/.jwt-secret` | sekret do podpisywania tokenów (min. 32 znaki) |
+| `JWT_SECRET` | losowy, zapisany w Netlify Blobs | sekret do podpisywania tokenów (min. 32 znaki) |
 | `JWT_EXPIRES_IN` | `7d` | czas ważności sesji |
 | `BCRYPT_ROUNDS` | `12` | koszt haszowania haseł |
-| `DATA_DIR` | `data` | katalog z bazą i obrazkami |
 | `MAX_UPLOAD_MB` | `5` | maksymalny rozmiar obrazka |
 | `TRUST_PROXY` | — | liczba serwerów pośredniczących (zwykle `1`), gdy aplikacja działa za nginx, Caddy itp. |
-| `ALLOW_EMBEDDING` | — | `1` pozwala osadzić aplikację w ramce `<iframe>` na innej stronie |
-| `SQLITE_DRIVER` | `auto` | `node` albo `better-sqlite3` (patrz „Rozwiązywanie problemów”) |
+| `ALLOW_EMBEDDING` | — | `1` pozwala osadzić aplikację poza Netlify; na Netlify polityka CSP i `X-Frame-Options` w `netlify.toml` domyślnie zezwalają tylko na tę samą domenę |
+
+## Wdrożenie na Netlify
+
+1. Wypchnij repozytorium do GitHub, GitLab lub Bitbucket i zaimportuj je jako nową witrynę Netlify. Katalog bazowy pozostaw jako katalog główny repozytorium.
+2. `netlify.toml` ustawia polecenie builda (`npm run build`), katalog publikacji (`dist`) i Node.js 22. Nie nadpisuj tych ustawień w panelu.
+3. Włącz **Netlify Server**. Ta funkcja jest Early Access i wymaga planu z kredytami lub Enterprise.
+4. Utwórz/włącz **Netlify Database** (dostępna w planach z kredytami). Netlify automatycznie stosuje migracje z `netlify/database/migrations/` podczas wdrożeń.
+5. Dodaj `JWT_SECRET` w ustawieniach zmiennych środowiskowych witryny. Nie zapisuj sekretów w repozytorium ani `netlify.toml`.
+6. Wypchnij zmiany i po wdrożeniu sprawdź `/api/health`, a następnie zarejestruj konto i utwórz talię.
+
+Backend jest obsługiwany przez Netlify Server pod `/api/*`; frontend jest publikowany jako statyczny build. Plik `data/fiszki.db` jest lokalnym, starszym plikiem i nie zostanie automatycznie zaimportowany do Netlify Database.
 
 ## Tryb deweloperski
 
@@ -90,7 +78,7 @@ Aplikacja działa bez żadnej konfiguracji. Aby coś zmienić, skopiuj `.env.exa
 npm run dev
 ```
 
-Uruchamia serwer API (z automatycznym restartem po zmianie plików) oraz serwer Vite z odświeżaniem na żywo. Aplikacja jest wtedy dostępna pod adresem <http://localhost:5173>.
+Serwer jest dostępny pod adresem wyświetlonym przez CLI.
 
 ## Testy
 
@@ -98,7 +86,7 @@ Uruchamia serwer API (z automatycznym restartem po zmianie plików) oraz serwer 
 npm test
 ```
 
-28 testów uruchamia prawdziwy serwer z tymczasową bazą i sprawdza między innymi: rejestrację i logowanie, haszowanie haseł, brak pól na e-mail i telefon w bazie, odrzucanie podrobionych tokenów, izolację danych między użytkownikami, wgrywanie i usuwanie obrazków, limity prób logowania i nagłówki bezpieczeństwa.
+`node --test tests/leitner.test.js` uruchamia niezależne testy algorytmu Leitnera. Testy API w `tests/api.test.js` pochodzą ze starszej konfiguracji SQLite i wymagają dostosowania do obecnego backendu Netlify Database przed użyciem jako bramki CI.
 
 ## Struktura projektu
 
@@ -107,8 +95,7 @@ fiszki/
 ├── server/                  backend (Express)
 │   ├── index.js             start serwera
 │   ├── app.js               składanie aplikacji: API, pliki frontendu, nagłówki, obsługa błędów
-│   ├── schema.sql           schemat bazy danych
-│   ├── db.js                połączenie z SQLite
+│   ├── db.js                połączenie z Netlify Database (Postgres)
 │   ├── auth.js              bcrypt, JWT, middleware wymagające logowania
 │   ├── validation.js        sprawdzanie danych wejściowych
 │   ├── uploads.js           zapis i weryfikacja przesłanych obrazków
@@ -124,24 +111,27 @@ fiszki/
 │       ├── lib/             api.js, auth.jsx, speech.js (TTS), lang.js (wykrywanie języka), images.js
 │       └── index.css        Tailwind, kolory obu motywów, animacja obrotu karty
 ├── tests/api.test.js        testy API
-├── scripts/dev.js           tryb deweloperski
-├── data/                    baza, obrazki i sekret JWT (tworzone przy starcie, poza repozytorium)
+├── db/schema.ts             schemat bazy danych
+├── netlify/database/        migracje Postgresa
+├── netlify/server/          backend Express dla Netlify Server
+├── netlify.toml             konfiguracja builda, routingu i nagłówków
 └── dist/                    zbudowany frontend (wynik `npm run build`)
 ```
 
 ## Baza danych
 
-Pełny schemat: [`server/schema.sql`](server/schema.sql). Jest zakładany automatycznie przy starcie serwera.
+Schemat Drizzle znajduje się w `db/schema.ts`; wersjonowane migracje są w `netlify/database/migrations/` i Netlify stosuje je automatycznie podczas wdrożeń.
 
 | Tabela | Najważniejsze kolumny |
 | --- | --- |
 | `users` | `username`, `username_key` (nazwa małymi literami, unikalna), `password_hash` (bcrypt), `token_version` |
 | `decks` | `user_id` → `users`, `name`, `description`, `front_lang`, `back_lang` (język odczytu: `auto` albo np. `en-US`) |
-| `cards` | `deck_id` → `decks`, `front`, `back`, `image_file` (plik w `data/uploads`) albo `image_url`, `image_side`, `position` |
+| `cards` | `deck_id` → `decks`, `front`, `back`, `image_file` (plik w Netlify Blobs) albo `image_url`, `image_side`, `position` |
+| `learning_progress` | para `user_id` + `card_id`, `box` (1–5), `next_review_at`, `consecutive_fails` |
 
 Usunięcie użytkownika usuwa jego zestawy, a usunięcie zestawu — jego fiszki (`ON DELETE CASCADE`); serwer kasuje przy tym pliki obrazków.
 
-**Kopia zapasowa** to kopia katalogu `data/` wykonana przy zatrzymanym serwerze. **Wyczyszczenie danych:** zatrzymaj serwer i usuń katalog `data/`.
+Kopie zapasowe i zarządzanie danymi produkcyjnymi wykonuj w Netlify Database. Lokalny `data/fiszki.db` nie jest bazą używaną przez wdrożenie Netlify.
 
 ## API
 
@@ -158,6 +148,8 @@ Wszystkie adresy poza rejestracją, logowaniem i `/api/health` wymagają nagłó
 | `POST` | `/api/decks` | nowy zestaw: `{ name, description?, frontLang?, backLang? }` |
 | `POST` | `/api/decks/sample` | przykładowy zestaw |
 | `GET` | `/api/decks/:id` | zestaw z fiszkami |
+| `GET` | `/api/decks/:id/lesson?limit=15` | wybór zaległych i nowych fiszek do lekcji (limit 1–50) |
+| `POST` | `/api/decks/:id/lesson/:cardId/rate` | zapis oceny `{ rating: "again" | "hard" | "medium" | "easy" }` |
 | `PATCH` | `/api/decks/:id` | edycja zestawu |
 | `DELETE` | `/api/decks/:id` | usunięcie zestawu z fiszkami i obrazkami |
 | `POST` | `/api/decks/:id/cards` | nowa fiszka: JSON `{ front, back, imageUrl?, imageSide? }` albo `multipart/form-data` z plikiem `image` |
@@ -199,20 +191,12 @@ Język odczytu ustawia się dla zestawu, osobno dla awersu i rewersu: w oknie **
 | Następna fiszka | `→` | przycisk „Następna”, przesunięcie palcem w lewo |
 | Poprzednia fiszka | `←` | przycisk „Poprzednia”, przesunięcie palcem w prawo |
 
-## Wdrożenie na serwerze
-
-1. Skopiuj projekt na serwer i wykonaj `npm install`, `npm run build`, `npm start` (najlepiej pod nadzorem menedżera procesów, np. systemd lub pm2).
-2. Wystaw aplikację przez serwer pośredniczący z HTTPS (np. Caddy lub nginx) i ustaw `TRUST_PROXY=1`, żeby limity prób liczyły prawdziwe adresy IP.
-3. Rób kopie zapasowe katalogu `data/`.
-
-Jeśli hosting instaluje zależności z `NODE_ENV=production`, narzędzia do budowania zostaną pominięte — użyj wtedy `npm install --include=dev` przed `npm run build`.
-
 ## Rozwiązywanie problemów
 
 | Objaw | Rozwiązanie |
 | --- | --- |
-| „Nie udało się uruchomić bazy danych SQLite” | Zaktualizuj Node.js do wersji 22.13 lub nowszej. Na Node.js 20 wykonaj dodatkowo `npm install better-sqlite3`. |
-| „Port 3000 jest zajęty” | Ustaw inny port w pliku `.env`, np. `PORT=3001`. |
+| Backend nie łączy się z bazą | Sprawdź, czy witryna Netlify ma włączoną Netlify Database i czy lokalnie uruchamiasz aplikację przez `netlify dev`. |
+| Netlify nie uruchamia backendu | Sprawdź dostęp do Netlify Server (Early Access) i czy plik `netlify/server/index.mjs` jest w repozytorium. |
 | „Frontend nie został jeszcze zbudowany” | Uruchom `npm run build`. |
 | Głośnik nie czyta albo czyta ze złym akcentem | Sprawdź, czy system ma głos dla danego języka, i wybierz język ręcznie w ustawieniach zestawu. |
 | Obrazek z adresu URL się nie wyświetla | Adres musi prowadzić bezpośrednio do pliku graficznego, a serwer, z którego pochodzi, musi pozwalać na jego wyświetlanie na innych stronach. |

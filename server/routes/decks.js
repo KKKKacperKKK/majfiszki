@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { HttpError, notFound } from '../errors.js';
+import { HttpError, notFound, validationError } from '../errors.js';
 import { SAMPLE_DECK, sampleImage } from '../sample-deck.js';
 import { toCard, toDeck } from '../serializers.js';
 import { parseCard, parseDeck, parseId } from '../validation.js';
+import { LESSON_RATINGS, reviewTransition } from '../leitner.js';
 
 const MAX_DECKS_PER_USER = 500;
 export const MAX_CARDS_PER_DECK = 2000;
@@ -104,6 +105,95 @@ export function deckRoutes({ db, auth, uploads }) {
     const deck = await findDeck(req);
     const cards = await db.all('SELECT * FROM cards WHERE deck_id = ? ORDER BY position, id', deck.id);
     res.json({ deck: toDeck(deck), cards: cards.map(toCard) });
+  });
+
+  router.get('/:deckId/lesson', async (req, res) => {
+    const deck = await findDeck(req);
+    const rawLimit = req.query.limit ?? '15';
+    const limit = typeof rawLimit === 'string' && /^\d+$/.test(rawLimit) ? Number(rawLimit) : NaN;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+      throw validationError({ limit: 'Wybierz od 1 do 50 fiszek na lekcję.' });
+    }
+
+    const now = new Date().toISOString();
+    const eligible = await db.all(
+      `SELECT c.*, lp.box, lp.next_review_at, lp.consecutive_fails
+         FROM cards c
+         LEFT JOIN learning_progress lp ON lp.card_id = c.id AND lp.user_id = ?
+        WHERE c.deck_id = ? AND (lp.card_id IS NULL OR lp.next_review_at <= ?)
+        ORDER BY CASE WHEN lp.card_id IS NULL THEN 1 ELSE 0 END, lp.next_review_at, c.position, c.id
+        LIMIT ?`,
+      req.user.id,
+      deck.id,
+      now,
+      limit,
+    );
+
+    res.json({
+      deck: toDeck(deck),
+      cards: eligible.map((card) => ({
+        ...toCard(card),
+        box: card.box ?? 1,
+        nextReviewAt: card.next_review_at ?? null,
+        consecutiveFails: card.consecutive_fails ?? 0,
+      })),
+    });
+  });
+
+  router.post('/:deckId/lesson/:cardId/rate', async (req, res) => {
+    const deck = await findDeck(req);
+    const cardId = parseId(req.params.cardId);
+    const rating = req.body?.rating;
+    if (!LESSON_RATINGS.includes(rating)) {
+      throw validationError({ rating: 'Wybierz jedną z czterech ocen powtórki.' });
+    }
+    if (!cardId) throw notFound('Nie znaleziono fiszki.');
+
+    const progress = await db.transaction(async (tx) => {
+      const current = await tx.get(
+        `SELECT c.id, COALESCE(lp.box, 1) AS box, COALESCE(lp.consecutive_fails, 0) AS consecutive_fails
+           FROM cards c
+           JOIN decks d ON d.id = c.deck_id
+           LEFT JOIN learning_progress lp ON lp.card_id = c.id AND lp.user_id = d.user_id
+          WHERE c.id = ? AND c.deck_id = ? AND d.user_id = ?
+          FOR UPDATE OF c`,
+        cardId,
+        deck.id,
+        req.user.id,
+      );
+      if (!current) throw notFound('Nie znaleziono fiszki.');
+
+      const now = new Date();
+      const next = reviewTransition({
+        box: current.box,
+        consecutiveFails: current.consecutive_fails,
+        rating,
+        now,
+      });
+      return tx.get(
+        `INSERT INTO learning_progress (user_id, card_id, box, next_review_at, consecutive_fails, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (user_id, card_id) DO UPDATE SET
+           box = EXCLUDED.box,
+           next_review_at = EXCLUDED.next_review_at,
+           consecutive_fails = EXCLUDED.consecutive_fails,
+           updated_at = EXCLUDED.updated_at
+         RETURNING box, next_review_at, consecutive_fails`,
+        req.user.id,
+        cardId,
+        next.box,
+        next.nextReviewAt,
+        next.consecutiveFails,
+        now.toISOString(),
+      );
+    });
+
+    res.json({
+      rating,
+      box: progress.box,
+      nextReviewAt: progress.next_review_at,
+      consecutiveFails: progress.consecutive_fails,
+    });
   });
 
   router.patch('/:deckId', async (req, res) => {

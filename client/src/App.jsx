@@ -7,6 +7,7 @@ import AccountPage from './pages/AccountPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import DeckPage from './pages/DeckPage.jsx';
 import DecksPage from './pages/DecksPage.jsx';
+import LessonPage from './pages/LessonPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import StudyPage from './pages/StudyPage.jsx';
 
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="decks/:deckId/study" element={<StudyPage />} />
+      <Route path="decks/:deckId/lesson" element={<LessonPage />} />
       <Route path="login" element={<RedirectAfterLogin />} />
       <Route path="register" element={<RedirectAfterLogin />} />
     </Routes>

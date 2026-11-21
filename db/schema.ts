@@ -1,7 +1,7 @@
 // Schemat bazy danych aplikacji Fiszki (Netlify Database / Postgres).
 // Migracje generuje `npx drizzle-kit generate`; Netlify stosuje je automatycznie przy wdrożeniu.
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgTable, serial, text } from "drizzle-orm/pg-core";
+import { check, index, integer, pgTable, primaryKey, serial, text } from "drizzle-orm/pg-core";
 
 // Użytkownicy: wyłącznie nazwa użytkownika i hash hasła (bcrypt).
 export const users = pgTable("users", {
@@ -54,5 +54,28 @@ export const cards = pgTable(
     index("idx_cards_deck").on(t.deckId, t.position, t.id),
     check("cards_image_side_check", sql`${t.imageSide} IN ('front', 'back', 'both')`),
     check("cards_single_image_check", sql`${t.imageFile} IS NULL OR ${t.imageUrl} IS NULL`),
+  ],
+);
+
+// Postęp powtórek jest prywatny dla użytkownika i niezależny dla każdej fiszki.
+export const learningProgress = pgTable(
+  "learning_progress",
+  {
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    cardId: integer("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    box: integer().notNull().default(1),
+    nextReviewAt: text("next_review_at").notNull(),
+    consecutiveFails: integer("consecutive_fails").notNull().default(0),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.cardId] }),
+    index("idx_learning_progress_user_review").on(t.userId, t.nextReviewAt),
+    check("learning_progress_box_check", sql`${t.box} BETWEEN 1 AND 5`),
+    check("learning_progress_fails_check", sql`${t.consecutiveFails} >= 0`),
   ],
 );
